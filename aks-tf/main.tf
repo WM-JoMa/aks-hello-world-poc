@@ -31,6 +31,8 @@ resource "azurerm_kubernetes_cluster" "aks" {
     network_plugin    = "azure"
     load_balancer_sku = "standard"
   }
+
+  tags                = local.tags
 }
 
 resource "null_resource" "build_and_push_docker_image" {
