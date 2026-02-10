@@ -129,19 +129,30 @@ jobs:
             -backend-config="container_name=${TF_BACKEND_CONTAINER}" \
             -backend-config="key=${{ inputs.environment }}.tfstate"
 
-      - name: Download plan artifact from this workflow run
-        uses: actions/download-artifact@v4
-        with:
-          # NOTE: this works when "apply" is run in the SAME workflow run_id as the uploaded artifact.
-          name: tfplan-${{ inputs.environment }}-${{ github.run_id }}
-          path: ${{ env.TF_WORKING_DIR }}
+      # - name: Download plan artifact from this workflow run
+      #   uses: actions/download-artifact@v4
+      #   with:
+      #     # NOTE: this works when "apply" is run in the SAME workflow run_id as the uploaded artifact.
+      #     name: tfplan-${{ inputs.environment }}-${{ github.run_id }}
+      #     path: ${{ env.TF_WORKING_DIR }}
 
-      - name: Verify plan exists
+      # - name: Verify plan exists
+      #   working-directory: ${{ env.TF_WORKING_DIR }}
+      #   run: |
+      #     ls -la
+      #     test -f tfplan
+
+      # - name: Terraform Apply (apply EXACT plan)
+      #   working-directory: ${{ env.TF_WORKING_DIR }}
+      #   run: terraform apply -auto-approve tfplan
+
+      - name: Terraform Validate
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform validate
+
+      - name: Terraform Apply
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: |
-          ls -la
-          test -f tfplan
-
-      - name: Terraform Apply (apply EXACT plan)
-        working-directory: ${{ env.TF_WORKING_DIR }}
-        run: terraform apply -auto-approve tfplan
+          terraform apply \
+            -var-file="vars/${{ inputs.environment }}.tfvars" \
+            -auto-approve
