@@ -12,8 +12,8 @@ on:
         description: "Environment"
         required: true
         type: choice
-        default: dev
-        options: [dev, test, prod]
+        default: poc
+        options: [poc]
 
 permissions:
   contents: read
