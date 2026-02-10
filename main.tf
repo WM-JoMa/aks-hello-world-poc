@@ -2,6 +2,14 @@ data "azurerm_resource_group" "rg" {
   name     = "aks-hello-world-rg"
 }
 
+locals {
+  tags = {
+    "Owner 1"         : "agreenwald@westmonroe.com"
+    "Owner 2"         : "None"
+    "Client Code"     : "Jepp-POC"
+  }
+}
+
 resource "azurerm_kubernetes_cluster" "aks" {
   name                = "aks-hello-world-cluster"
   location            = data.azurerm_resource_group.rg.location

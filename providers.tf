@@ -1,6 +1,9 @@
 terraform {
   required_version = ">= 1.14.4"
-  backend "azurerm" {}
+  backend "azurerm" {
+    key      = "aks-poc.tfstate"
+    use_oidc = true
+  }
 
   required_providers {
     azurerm = {
@@ -11,12 +14,21 @@ terraform {
       source  = "hashicorp/kubernetes"
       version = ">= 2.0.0"
     }
+    azapi = {
+      source  = "azure/azapi"
+      version = "~>1.5"
+    }
   }
 }
 
 provider "azurerm" {
   subscription_id = var.subscription_id
   features {}
+  use_oidc = true
+}
+
+provider "azapi" {
+  use_oidc = true
 }
 
 provider "kubernetes" {
