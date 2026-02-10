@@ -1,5 +1,5 @@
 data "azurerm_resource_group" "rg" {
-  name     = "aks-hello-world-rg"
+  name     = "aks-hello-world-poc"
 }
 
 locals {
