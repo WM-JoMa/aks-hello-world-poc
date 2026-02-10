@@ -99,7 +99,7 @@ jobs:
           retention-days: 7
 
   apply:
-    name: Terraform Apply (from uploaded plan)
+    name: Terraform Apply
     if: ${{ inputs.action == 'apply' }}
     runs-on: ubuntu-latest
 
