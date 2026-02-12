@@ -56,7 +56,7 @@ resource "kubernetes_namespace_v1" "hello_world_ns" {
 resource "kubernetes_deployment_v1" "hello_world_app" {
   metadata {
     name      = "hello-world-app"
-    namespace = kubernetes_namespace.hello_world_ns.metadata[0].name
+    namespace = kubernetes_namespace_v1.hello_world_ns.metadata[0].name
   }
 
   spec {
@@ -92,7 +92,7 @@ resource "kubernetes_deployment_v1" "hello_world_app" {
 resource "kubernetes_service_v1" "hello_world_service" {
   metadata {
     name      = "hello-world-service"
-    namespace = kubernetes_namespace.hello_world_ns.metadata[0].name
+    namespace = kubernetes_namespace_v1.hello_world_ns.metadata[0].name
   }
 
   spec {
