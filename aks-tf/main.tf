@@ -39,10 +39,10 @@ resource "null_resource" "build_and_push_docker_image" {
   provisioner "local-exec" {
     command = <<EOT
 docker build -t helloworld-java:v1 .
-az acr create --name helloworldacr --resource-group \${data.azurerm_resource_group.rg.name} --sku Basic
-az acr login --name helloworldacr
-docker tag helloworld-java:v1 helloworldacr.azurecr.io/helloworld-java:v1
-docker push helloworldacr.azurecr.io/helloworld-java:v1
+az acr create --name wmpagreenwaldhelloworldacr --resource-group \${data.azurerm_resource_group.rg.name} --sku Basic
+az acr login --name wmpagreenwaldhelloworldacr
+docker tag helloworld-java:v1 wmpagreenwaldhelloworldacr.azurecr.io/helloworld-java:v1
+docker push wmpagreenwaldhelloworldacr.azurecr.io/helloworld-java:v1
 EOT
   }
 }
@@ -78,7 +78,7 @@ resource "kubernetes_deployment_v1" "hello_world_app" {
       spec {
         container {
           name  = "hello-world-container"
-          image = "helloworldacr.azurecr.io/helloworld-java:v1"
+          image = "wmpagreenwaldhelloworldacr.azurecr.io/helloworld-java:v1"
 
           port {
             container_port = 8080
