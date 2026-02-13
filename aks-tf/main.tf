@@ -35,13 +35,23 @@ resource "azurerm_kubernetes_cluster" "aks" {
   tags                = local.tags
 }
 
+# resource "null_resource" "build_and_push_docker_image" {
+#   provisioner "local-exec" {
+#     command = <<EOT
+# docker build -t helloworld-java:v1 .
+# az acr create --name wmpagreenwaldhelloworldacr --resource-group \${data.azurerm_resource_group.rg.name} --sku Basic
+# az acr login --name wmpagreenwaldhelloworldacr
+# docker tag helloworld-java:v1 wmpagreenwaldhelloworldacr.azurecr.io/helloworld-java:v1
+# docker push wmpagreenwaldhelloworldacr.azurecr.io/helloworld-java:v1
+# EOT
+#   }
+# }
+
 resource "null_resource" "build_and_push_docker_image" {
   provisioner "local-exec" {
     command = <<EOT
-docker build -t helloworld-java:v1 .
-az acr create --name wmpagreenwaldhelloworldacr --resource-group \${data.azurerm_resource_group.rg.name} --sku Basic
 az acr login --name wmpagreenwaldhelloworldacr
-docker tag helloworld-java:v1 wmpagreenwaldhelloworldacr.azurecr.io/helloworld-java:v1
+docker build -t wmpagreenwaldhelloworldacr.azurecr.io/helloworld-java:v1 .
 docker push wmpagreenwaldhelloworldacr.azurecr.io/helloworld-java:v1
 EOT
   }
