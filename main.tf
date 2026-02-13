@@ -73,19 +73,73 @@ resource "kubernetes_namespace_v1" "hello_world_ns" {
   }
 }
 
-resource "kubernetes_deployment_v1" "hello_world_app" {
-  depends_on = [ null_resource.build_and_push_docker_image ]
+# resource "kubernetes_deployment_v1" "hello_world_app" {
+#   depends_on = [ null_resource.build_and_push_docker_image ]
+#   metadata {
+#     name      = "hello-world-app"
+#     namespace = kubernetes_namespace_v1.hello_world_ns.metadata[0].name
+#   }
+
+#   spec {
+#     selector {
+#       match_labels = {
+#         app = "hello-world"
+#       }
+#     }
+
+#     template {
+#       metadata {
+#         labels = {
+#           app = "hello-world"
+#         }
+#       }
+
+#       spec {
+#         container {
+#           name  = "hello-world-container"
+#           image = "wmpagreenwaldhelloworldacr.azurecr.io/helloworld-java:v1"
+
+#           port {
+#             container_port = 8080
+#           }
+#         }
+#       }
+#     }
+#   }
+# }
+
+# resource "kubernetes_service_v1" "hello_world_service" {
+#   depends_on = [ null_resource.build_and_push_docker_image ]
+#   metadata {
+#     name      = "hello-world-service"
+#     namespace = kubernetes_namespace_v1.hello_world_ns.metadata[0].name
+#   }
+
+#   spec {
+#     selector = {
+#       app = "hello-world"
+#     }
+
+#     type = "LoadBalancer"
+
+#     port {
+#       port        = 80
+#       target_port = 8080
+#     }
+#   }
+# }
+
+resource "kubernetes_job_v1" "hello_world_job" {
+  depends_on = [null_resource.build_and_push_docker_image]
+
   metadata {
-    name      = "hello-world-app"
+    name      = "hello-world-job"
     namespace = kubernetes_namespace_v1.hello_world_ns.metadata[0].name
   }
 
   spec {
-    selector {
-      match_labels = {
-        app = "hello-world"
-      }
-    }
+    # Optional: retry behavior
+    backoff_limit = 0
 
     template {
       metadata {
@@ -95,36 +149,16 @@ resource "kubernetes_deployment_v1" "hello_world_app" {
       }
 
       spec {
+        restart_policy = "Never"
+
         container {
           name  = "hello-world-container"
           image = "wmpagreenwaldhelloworldacr.azurecr.io/helloworld-java:v1"
-
-          port {
-            container_port = 8080
-          }
         }
       }
     }
-  }
-}
 
-resource "kubernetes_service_v1" "hello_world_service" {
-  depends_on = [ null_resource.build_and_push_docker_image ]
-  metadata {
-    name      = "hello-world-service"
-    namespace = kubernetes_namespace_v1.hello_world_ns.metadata[0].name
-  }
-
-  spec {
-    selector = {
-      app = "hello-world"
-    }
-
-    type = "LoadBalancer"
-
-    port {
-      port        = 80
-      target_port = 8080
-    }
+    # Optional: auto-cleanup finished jobs (K8s >= 1.21, AKS supports this)
+    ttl_seconds_after_finished = 600
   }
 }
