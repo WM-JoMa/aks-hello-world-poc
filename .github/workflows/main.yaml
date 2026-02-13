@@ -1,4 +1,4 @@
-name: Terraform Plan -> Apply
+name: Terraform Plan, Apply, Destroy
 
 on:
   workflow_dispatch:
@@ -7,7 +7,7 @@ on:
         description: "Choose Terraform action"
         required: true
         type: choice
-        options: [plan, apply]
+        options: [plan, apply, destroy]
       environment:
         description: "Environment"
         required: true
@@ -154,5 +154,47 @@ jobs:
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: |
           terraform apply \
+            -var-file="vars/${{ inputs.environment }}.tfvars" \
+            -auto-approve
+
+  destroy:
+    name: Terraform Destroy
+    if: ${{ inputs.action == 'destroy' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+
+      - name: Terraform Init (AzureRM remote backend)
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: |
+          terraform init -upgrade \
+            -backend-config="resource_group_name=${TF_BACKEND_RG}" \
+            -backend-config="storage_account_name=${TF_BACKEND_SA}" \
+            -backend-config="container_name=${TF_BACKEND_CONTAINER}" \
+            -backend-config="key=${{ inputs.environment }}.tfstate"
+
+      - name: Terraform Validate
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform validate
+
+      - name: Terraform Destroy
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: |
+          terraform destroy \
             -var-file="vars/${{ inputs.environment }}.tfvars" \
             -auto-approve
