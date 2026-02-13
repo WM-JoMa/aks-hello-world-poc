@@ -207,7 +207,7 @@ jobs:
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: terraform validate
 
-      - name: Terraform Destroy (targeted: AKS + k8s only)
+      - name: Terraform Destroy (targeted to AKS + k8s only)
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: |
           terraform destroy \
