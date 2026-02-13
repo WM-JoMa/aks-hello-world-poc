@@ -81,8 +81,6 @@ resource "kubernetes_deployment_v1" "hello_world_app" {
   }
 
   spec {
-    replicas = 2
-
     selector {
       match_labels = {
         app = "hello-world"
