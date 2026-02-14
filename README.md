@@ -1,4 +1,4 @@
-# Terraform + GitHub Actions on Azure (ACR + AKS “Hello, World!”)
+# AKS + Terraform + GitHub Actions Learning Repository
 
 A learning repo that uses **Terraform** and **GitHub Actions** to:
 
@@ -8,12 +8,26 @@ A learning repo that uses **Terraform** and **GitHub Actions** to:
 `Hello, World!`
 
 ➡️ Jump to: [Quickstart](#quickstart)
+➡️ Jump to: [How it works](#how-it-works)
+
+## Table of contents
+
+- [Overview](#overview)
+- [Prerequisites](#prerequisites)
+- [Quickstart](#quickstart)
+- [Architecture](#architecture)
+- [Set up the GitHub repo](#set-up-the-github-repo)
+- [Configuration](#configuration)
+- [Deploy](#deploy)
+- [Verify](#verify)
+- [Destroy](#destroy)
+- [How it works](#how-it-works)
+- [Local workflow (optional)](#local-workflow-optional)
+- [Notes and constraints](#notes-and-constraints)
 
 ## Overview
 
 This repository is organized into two Terraform deployments (ACR first, then AKS), plus a minimal Java web app and Dockerfile.
-
-```
 
 .
 ├── .github/
@@ -36,24 +50,132 @@ This repository is organized into two Terraform deployments (ACR first, then AKS
 ├── Dockerfile
 └── HelloWorld.java
 
-````
+## Prerequisites
+
+You’ll need:
+
+- **An Azure subscription**
+- **An existing Azure Resource Group**
+  - Terraform looks it up; it does not create it.
+- **An Azure Storage account + blob container** for Terraform remote state
+- **Azure AD app registration / federated credentials for GitHub OIDC**
+  - Represented in GitHub as `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, and `AZURE_SUBSCRIPTION_ID`
+- **A public (or Enterprise) GitHub repository** with Actions enabled
+
+> This repo is a learning exercise and keeps infrastructure minimal and explicit.
 
 ## Quickstart
 
-1) Configure **GitHub repo variables** and **GitHub repo secrets** (see [Configuration](#configuration)).
-2) Run the **ACR workflow**: `.github/workflows/deploy_acr.yaml` (choose `plan -> apply`).
-3) Run the **AKS workflow**: `.github/workflows/deploy_aks.yaml` (choose `plan -> apply`).
-4) Verify the app responds with `Hello, World!` (see [Verify](#verify)).
+1) Set up GitHub repo **variables** and **secrets**: see [Configuration](#configuration).  
+2) Deploy ACR: see [Deploy](#deploy).  
+3) Deploy AKS + the app: see [Deploy](#deploy).  
+4) Confirm the response: see [Verify](#verify).
 
-> This repo is intentionally **GitHub Actions–only**. It does not document a local Terraform workflow.
+## Architecture
 
-## How it works (novice-friendly)
+There are two Terraform deployments:
 
-If you’re new to all of this, here’s the “story” end-to-end:
+- `terraform/acr` creates the Azure Container Registry
+- `terraform/aks` creates AKS and Kubernetes resources, and references ACR by name
+
+Module docs:
+- [terraform/acr](terraform/acr/README.md)
+- [terraform/aks](terraform/aks/README.md)
+
+## Set up the GitHub repo
+
+At a high level:
+1) Create a GitHub repository and push this code.
+2) Configure repo **variables** and **secrets** (below).
+3) Create a GitHub **Environment** named `poc` (optional but recommended) and require approval for deploy jobs if desired.
+4) Run the workflows.
+
+### Optional: Require manual approval before apply
+Both workflows use `environment: name: poc` on the apply job. If you create a GitHub Environment named `poc`, you can configure:
+- required reviewers (manual approval gates)
+- environment secrets/vars (not used here, but supported)
+
+## Configuration
+
+### Azure resources assumed to exist
+This repo assumes the following already exist in your Azure subscription:
+- An Azure **Resource Group** (Terraform looks it up; it does not create it)
+- An Azure Storage **account + container** for Terraform remote state
+- An Azure AD application / federated credentials for **GitHub OIDC** (represented by the `AZURE_*` secrets)
+
+### Repo variables (Actions → Variables)
+Create these **repo-level variables**:
+
+- `ACR_NAME`  
+  The name of the Azure Container Registry. (ACR names must be globally unique.)
+- `IMAGE_NAME`  
+  The container image repository name (e.g., `helloworld-java`).
+
+These are exported into Terraform as environment variables (`TF_VAR_acr_name` and `TF_VAR_image_name`) to ensure the workflow build/push matches what Terraform deploys.
+
+### Repo secrets (Actions → Secrets)
+You will need secrets for:
+
+**Azure OIDC**
+- `AZURE_CLIENT_ID`
+- `AZURE_TENANT_ID`
+- `AZURE_SUBSCRIPTION_ID`
+
+**Terraform backend (Azure Storage)**
+- `BACKEND_AZURE_RESOURCE_GROUP_NAME`
+- `BACKEND_AZURE_STORAGE_ACCOUNT_NAME`
+- `BACKEND_AZURE_STORAGE_ACCOUNT_CONTAINER_NAME`
+
+## Deploy
+
+> Order matters: deploy **ACR first**, then **AKS**.
+
+### Step 1: Deploy ACR
+Run workflow: **Deploy ACR Terraform** (`.github/workflows/deploy_acr.yaml`)  
+Choose:
+- action: `plan -> apply`
+- environment: `poc`
+
+### Step 2: Deploy AKS + the app
+Run workflow: **Deploy AKS Terraform** (`.github/workflows/deploy_aks.yaml`)  
+Choose:
+- action: `plan -> apply`
+- environment: `poc`
+
+This workflow will:
+1) build and push the Docker image to ACR tagged with the Git SHA
+2) deploy/update the AKS workload to use that image tag
+
+## Verify
+
+After the AKS workflow completes:
+1) Find the external IP assigned to the Kubernetes Service (type `LoadBalancer`) using your preferred method (Azure Portal is fine).
+2) Call it in a browser or with curl:
+
+```bash
+curl http://<external-ip>/
+````
+
+Expected response:
+
+```text
+Hello, World!
+```
+
+## Destroy
+
+Both workflows also support `destroy`.
+
+* The **ACR destroy** runs a normal `terraform destroy` for the ACR deployment.
+* The **AKS destroy** is **targeted** to the AKS cluster, role assignment, and the Kubernetes resources created by this module. This helps avoid accidentally destroying unrelated resources that may exist in the same Resource Group.
+
+> For a learning repo, it’s normal to destroy and recreate often. Just be aware that destroying cloud resources is permanent.
+
+## How it works
 
 ### 1) The app is a tiny web server
 - `HelloWorld.java` starts a simple HTTP server on port `8080`.
-- When you visit `/`, it returns `Hello, World!`.
+- When you visit `/`, it returns `Hello, World!`. It's important to note that this won't be visible in a browser because it isn't valid HTML.
 
 ### 2) Docker turns the app into an image
 - `Dockerfile` compiles the Java file and packages it into a container image.
@@ -75,114 +197,89 @@ If you’re new to all of this, here’s the “story” end-to-end:
 - Terraform adds an Azure **role assignment** (`AcrPull`) so the cluster’s kubelet identity can pull images from your registry.
 
 ### 6) GitHub Actions runs the whole process
-Both workflows are started manually via the GitHub UI (workflow_dispatch):
+You start both workflows manually from the GitHub UI. Each workflow runs Terraform using:
+- **OIDC authentication** to Azure (no long-lived Azure password in the repo)
+- an **Azure Storage remote backend** for Terraform state
+- a **plan → apply** flow (with optional manual approval via GitHub Environments)
 
-- **Deploy ACR Terraform**
-  - runs `terraform plan`
-  - saves the plan as an artifact
-  - requires approval (GitHub Environment) before applying
-  - applies the exact plan
+### 7) Why ACR and AKS are separate workflows
 
-- **Deploy AKS Terraform**
-  - runs `terraform plan`
-  - requires approval before applying
-  - builds + pushes the Docker image to ACR
-  - applies the exact plan (which deploys the updated image tag to Kubernetes)
+ACR and AKS are deployed in **two separate Terraform configurations** and **two separate GitHub Actions workflows** on purpose:
 
-### 7) Authentication + state
-Two important “plumbing” concepts are handled by the workflows:
+- **They are independent layers.**  
+  ACR is foundational infrastructure (a place to store images). AKS is the runtime environment (a cluster that pulls and runs images). Keeping them separate makes the dependency clear: **AKS needs ACR to exist first**, but ACR does not depend on AKS.
 
-- **Authentication (OIDC):** The workflows use GitHub’s OIDC integration to authenticate to Azure (no long-lived Azure password in the repo).
-- **Terraform state (remote backend):** Terraform stores state in Azure Storage. The workflows pass the backend configuration at `terraform init` time.
+- **Different change frequency.**  
+  You typically create ACR once and rarely change it. You may update the AKS workload often (new image tags, new app settings, Kubernetes changes). Separating workflows lets you redeploy AKS without touching ACR.
 
-## Architecture
+- **Cleaner, smaller Terraform state.**  
+  Each Terraform deployment has its own remote state file:
+  - ACR uses `acr_<environment>.tfstate`
+  - AKS uses `aks_<environment>.tfstate`  
+  Smaller, focused state files are easier to understand and reduce the “blast radius” of changes.
 
-There are two Terraform deployments:
+- **Safer applies and destroys.**  
+  Having separate workflows reduces the chance that an AKS change accidentally modifies or destroys ACR (or vice versa). It also allows different destroy behavior (for example, the AKS workflow uses a targeted destroy).
 
-- `terraform/acr` creates the Azure Container Registry
-- `terraform/aks` creates AKS and Kubernetes resources, and references ACR by name
+- **Build/push fits naturally with the AKS deployment.**  
+  The AKS workflow builds and pushes the Docker image to ACR and then deploys Kubernetes resources that reference that image tag. Keeping build/push next to the AKS apply makes the delivery flow easy to follow.
 
-Module docs:
-- [terraform/acr](terraform/acr/README.md)
-- [terraform/aks](terraform/aks/README.md)
+In short: **ACR is the image store; AKS is the image runner**—separating workflows keeps the learning repo easier to reason about and safer to operate.
 
-## Configuration
+## Local workflow (optional)
 
-### Repo variables (Actions → Variables)
-Create these **repo-level variables**:
+If you want to run Terraform locally (instead of GitHub Actions), the key is to mirror what the workflows do:
 
-- `ACR_NAME`  
-  The name of the Azure Container Registry. (ACR names must be globally unique.)
-- `IMAGE_NAME`  
-  The container image repository name (e.g., `helloworld-java`).
+* Use Azure OIDC or another supported `azurerm` auth method
+* Configure the AzureRM backend at `terraform init` time
+* Provide required variables (tfvars + `TF_VAR_*`)
 
-These are also exported into Terraform as environment variables (`TF_VAR_acr_name` and `TF_VAR_image_name`) to ensure the workflow build/push matches what Terraform deploys.
+> The GitHub Actions workflows are the “source of truth” for how this repo is intended to run. Local steps below are provided for convenience.
 
-### Repo secrets (Actions → Secrets)
-You will need secrets for:
+### Local: ACR
 
-**Azure OIDC**
-- `AZURE_CLIENT_ID`
-- `AZURE_TENANT_ID`
-- `AZURE_SUBSCRIPTION_ID`
-
-**Terraform backend (Azure Storage)**
-- `BACKEND_AZURE_RESOURCE_GROUP_NAME`
-- `BACKEND_AZURE_STORAGE_ACCOUNT_NAME`
-- `BACKEND_AZURE_STORAGE_ACCOUNT_CONTAINER_NAME`
-
-> This repo assumes the backend storage exists already and is accessible.
-
-### Environments
-The workflows currently support a single environment:
-- `poc`
-
-Environment-specific Terraform variables live in:
-- `terraform/acr/vars/poc.tfvars`
-- `terraform/aks/vars/poc.tfvars`
-
-## Deploy
-
-### Step 1: Deploy ACR
-Run workflow: **Deploy ACR Terraform** (`.github/workflows/deploy_acr.yaml`)  
-Choose:
-- action: `plan -> apply`
-- environment: `poc`
-
-### Step 2: Deploy AKS + the app
-Run workflow: **Deploy AKS Terraform** (`.github/workflows/deploy_aks.yaml`)  
-Choose:
-- action: `plan -> apply`
-- environment: `poc`
-
-This workflow will:
-1) build and push the Docker image to ACR tagged with the Git SHA
-2) deploy/update the AKS workload to use that image tag
-
-## Verify
-
-After the AKS workflow completes:
-1) Find the external IP assigned to the Kubernetes Service (type `LoadBalancer`)
-2) Call it in a browser or with curl:
+From repo root:
 
 ```bash
-curl http://<external-ip>/
-````
+cd terraform/acr
 
-Expected response:
+# Backend config (replace placeholders)
+terraform init -upgrade \
+  -backend-config="resource_group_name=<BACKEND_RG>" \
+  -backend-config="storage_account_name=<BACKEND_STORAGE_ACCOUNT>" \
+  -backend-config="container_name=<BACKEND_CONTAINER>" \
+  -backend-config="key=acr_poc.tfstate"
 
-```text
-Hello, World!
+# Supply ACR name the same way the workflow does
+export TF_VAR_acr_name="<ACR_NAME>"
+
+terraform plan -var-file="vars/poc.tfvars"
+terraform apply -var-file="vars/poc.tfvars"
 ```
 
-## Destroy
+### Local: AKS
 
-Both workflows also support `destroy`.
+From repo root:
 
-* The **ACR destroy** runs a normal `terraform destroy` for the ACR deployment.
-* The **AKS destroy** runs a **targeted destroy** for the AKS cluster and Kubernetes resources defined in `terraform/aks`.
+```bash
+cd terraform/aks
 
-> For a learning repo, it’s normal to destroy and recreate often. Just be aware that destroying cloud resources is permanent.
+terraform init -upgrade \
+  -backend-config="resource_group_name=<BACKEND_RG>" \
+  -backend-config="storage_account_name=<BACKEND_STORAGE_ACCOUNT>" \
+  -backend-config="container_name=<BACKEND_CONTAINER>" \
+  -backend-config="key=aks_poc.tfstate"
+
+# Supply shared values the same way the workflow does
+export TF_VAR_acr_name="<ACR_NAME>"
+export TF_VAR_image_name="<IMAGE_NAME>"
+
+# Use any tag you pushed (the workflow uses the Git SHA)
+terraform plan -var-file="vars/poc.tfvars" -var="image_tag=<TAG>"
+terraform apply -var-file="vars/poc.tfvars" -var="image_tag=<TAG>"
+```
+
+> Local Docker build/push is intentionally not documented here; the GitHub Actions AKS workflow performs build/push automatically during apply.
 
 ## Notes and constraints
 
