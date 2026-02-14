@@ -174,10 +174,7 @@ jobs:
 
       - name: Terraform Apply (apply EXACT plan)
         working-directory: ${{ env.TF_WORKING_DIR }}
-        run: terraform apply \
-              -var-file="vars/poc.tfvars" \
-              -target=azurerm_container_registry.hello_world \
-              -auto-approve
+        run: terraform apply -var-file="vars/poc.tfvars" -target=azurerm_container_registry.hello_world -auto-approve
 
 
   destroy:
