@@ -162,6 +162,17 @@ jobs:
           test -f tfplan
           test -f tfplan.txt
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: ACR login (token for Buildx)
+        shell: bash
+        run: |
+          TOKEN=$(az acr login --name "$ACR_NAME" --expose-token --output tsv --query accessToken)
+          echo "$TOKEN" | docker login "$ACR_LOGIN_SERVER" \
+            --username 00000000-0000-0000-0000-000000000000 \
+            --password-stdin
+
       - name: Build & Push (with GitHub Actions cache)
         uses: docker/build-push-action@v6
         with:
