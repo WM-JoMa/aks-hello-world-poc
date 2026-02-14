@@ -162,15 +162,23 @@ jobs:
           test -f tfplan
           test -f tfplan.txt
 
-      - name: Build & Push Docker image to ACR (tag = GitHub SHA)
-        run: |
-          az acr login --name $ACR_NAME
-          docker build -t $ACR_LOGIN_SERVER/$IMAGE_NAME:${GITHUB_SHA} .
-          docker push $ACR_LOGIN_SERVER/$IMAGE_NAME:${GITHUB_SHA}
+      # - name: Build & Push Docker image to ACR (tag = GitHub SHA)
+      #   run: |
+      #     az acr login --name $ACR_NAME
+      #     docker build -t $ACR_LOGIN_SERVER/$IMAGE_NAME:${GITHUB_SHA} .
+      #     docker push $ACR_LOGIN_SERVER/$IMAGE_NAME:${GITHUB_SHA}
+
+      # - name: Terraform Apply (apply EXACT plan)
+      #   working-directory: ${{ env.TF_WORKING_DIR }}
+      #   run: terraform apply -auto-approve tfplan
 
       - name: Terraform Apply (apply EXACT plan)
         working-directory: ${{ env.TF_WORKING_DIR }}
-        run: terraform apply -auto-approve tfplan
+        run: terraform apply \
+              -var-file="vars/poc.tfvars" \
+              -target=azurerm_container_registry.hello_world \
+              -auto-approve
+
 
   destroy:
     name: Terraform Destroy
