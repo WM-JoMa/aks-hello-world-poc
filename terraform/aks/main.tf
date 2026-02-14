@@ -7,17 +7,6 @@ data "azurerm_container_registry" "acr" {
   resource_group_name = data.azurerm_resource_group.rg.name
 }
 
-data "terraform_remote_state" "acr" {
-  backend = "azurerm"
-
-  config = {
-    resource_group_name  = "aks-hello-world-poc"
-    storage_account_name = "stakspoctfstate"
-    container_name       = "terraformstatefiles"
-    key                  = "acr_poc.tfstate"
-  }
-}
-
 locals {
   acr_login_server = "${var.acr_name}.azurecr.io"
   image            = "${local.acr_login_server}/${var.image_name}:${var.image_tag}"
@@ -27,7 +16,6 @@ locals {
   k8s_deployment_name = "${var.app_name}-app"
   k8s_service_name    = "${var.app_name}-service"
 }
-
 
 resource "azurerm_kubernetes_cluster" "aks" {
   name                = var.aks_name
