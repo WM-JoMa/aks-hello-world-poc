@@ -56,6 +56,7 @@ resource "kubernetes_namespace_v1" "hello_world_ns" {
 }
 
 resource "kubernetes_deployment_v1" "hello_world_app" {
+  depends_on = [azurerm_role_assignment.this]
   metadata {
     name      = "hello-world-app"
     namespace = kubernetes_namespace_v1.hello_world_ns.metadata[0].name
@@ -84,6 +85,7 @@ resource "kubernetes_deployment_v1" "hello_world_app" {
         container {
           name  = "hello-world-container"
           image = local.image
+          image_pull_policy = "Always"
 
           port {
             container_port = 8080
@@ -114,6 +116,7 @@ resource "kubernetes_deployment_v1" "hello_world_app" {
 }
 
 resource "kubernetes_service_v1" "hello_world_service" {
+  depends_on = [azurerm_role_assignment.this]
   metadata {
     name      = "hello-world-service"
     namespace = kubernetes_namespace_v1.hello_world_ns.metadata[0].name
