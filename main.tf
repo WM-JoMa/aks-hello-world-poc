@@ -83,7 +83,7 @@ resource "kubernetes_deployment_v1" "hello_world_app" {
       spec {
         container {
           name  = "hello-world-container"
-          image = "wmpagreenwaldhelloworldacr.azurecr.io/helloworld-java:v1"
+          image = local.image
 
           port {
             container_port = 8080
