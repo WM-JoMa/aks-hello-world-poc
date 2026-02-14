@@ -207,12 +207,13 @@ jobs:
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: terraform validate
 
-      - name: Terraform Destroy (targeted to AKS + k8s only)
+      - name: "Terraform Destroy (targeted to AKS + k8s only)"
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: |
           terraform destroy \
             -var-file="vars/${{ inputs.environment }}.tfvars" \
-            -target=kubernetes_job_v1.hello_world_job \
+            -target=kubernetes_service_v1.hello_world_service \
+            -target=kubernetes_deployment_v1.hello_world_app \
             -target=kubernetes_namespace_v1.hello_world_ns \
             -target=azurerm_role_assignment.this \
             -target=azurerm_kubernetes_cluster.aks \

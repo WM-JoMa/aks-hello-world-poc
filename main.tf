@@ -55,34 +55,80 @@ resource "kubernetes_namespace_v1" "hello_world_ns" {
   }
 }
 
-resource "kubernetes_job_v1" "hello_world_job" {
-  depends_on = [azurerm_role_assignment.this]
-
+resource "kubernetes_deployment_v1" "hello_world_app" {
   metadata {
-    name      = "hello-world-job"
+    name      = "hello-world-app"
     namespace = kubernetes_namespace_v1.hello_world_ns.metadata[0].name
+    labels = {
+      app = "hello-world"
+    }
   }
 
   spec {
-    backoff_limit = 0
+    replicas = 1
+
+    selector {
+      match_labels = {
+        app = "hello-world"
+      }
+    }
 
     template {
       metadata {
-        labels = { app = "hello-world" }
+        labels = {
+          app = "hello-world"
+        }
       }
 
       spec {
-        restart_policy = "Never"
-
         container {
           name  = "hello-world-container"
-          image = local.image
+          image = "wmpagreenwaldhelloworldacr.azurecr.io/helloworld-java:v1"
 
-          # optional, but helps avoid stale pulls if you ever reuse tags
-          image_pull_policy = "Always"
+          port {
+            container_port = 8080
+          }
+
+          # Optional but recommended for stable rollouts
+          readiness_probe {
+            http_get {
+              path = "/"
+              port = 8080
+            }
+            initial_delay_seconds = 2
+            period_seconds        = 5
+          }
+
+          liveness_probe {
+            http_get {
+              path = "/"
+              port = 8080
+            }
+            initial_delay_seconds = 10
+            period_seconds        = 10
+          }
         }
       }
     }
   }
 }
 
+resource "kubernetes_service_v1" "hello_world_service" {
+  metadata {
+    name      = "hello-world-service"
+    namespace = kubernetes_namespace_v1.hello_world_ns.metadata[0].name
+  }
+
+  spec {
+    selector = {
+      app = "hello-world"
+    }
+
+    type = "LoadBalancer"
+
+    port {
+      port        = 80
+      target_port = 8080
+    }
+  }
+}
