@@ -21,23 +21,25 @@ permissions:
   actions: read
 
 concurrency:
+# Prevent overlapping Terraform runs for the same environment
   group: terraform-${{ inputs.environment }}
   cancel-in-progress: false
 
 env:
+  # Terraform non interactive settings for CI
   TF_IN_AUTOMATION: "true"
   TF_INPUT: "false"
   TF_WORKING_DIR: "terraform/acr"
   TF_VERSION: "1.11.4"
-  TF_VAR_acr_name: ${{ vars.ACR_NAME }}
+  TF_VAR_acr_name: ${{ vars.ACR_NAME }} # Pass ACR name into Terraform via TF_VAR to avoid duplicating in tfvars - store this in GitHub variables
 
-  # Azure auth via OIDC (recommended)
+  # Azure auth via OIDC - store these in GitHub secrets
   ARM_USE_OIDC: "true"
   ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
   ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
   ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-  # Backend (Azure Storage) - store these in GitHub secrets
+  # Terraform Backend (Azure Storage) - store these in GitHub secrets
   TF_BACKEND_RG: ${{ secrets.BACKEND_AZURE_RESOURCE_GROUP_NAME }}
   TF_BACKEND_SA: ${{ secrets.BACKEND_AZURE_STORAGE_ACCOUNT_NAME }}
   TF_BACKEND_CONTAINER: ${{ secrets.BACKEND_AZURE_STORAGE_ACCOUNT_CONTAINER_NAME }}
@@ -65,6 +67,7 @@ jobs:
           terraform_version: ${{ env.TF_VERSION }}
           terraform_wrapper: false
 
+      # Backend key is set here rather than in Terraform code
       - name: Terraform Init (AzureRM remote backend)
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: |
@@ -78,6 +81,7 @@ jobs:
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: terraform validate
 
+      # tfvars holds deployment specific inputs like RG name and tags
       - name: Terraform Plan (create plan file)
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: |
@@ -89,6 +93,7 @@ jobs:
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: terraform show -no-color tfplan > tfplan.txt
 
+      # Persist the exact plan that will be applied
       - name: Upload plan artifacts
         uses: actions/upload-artifact@v4
         with:

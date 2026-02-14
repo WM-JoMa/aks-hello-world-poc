@@ -21,28 +21,32 @@ permissions:
   actions: read
 
 concurrency:
+  # Prevent overlapping Terraform runs for the same environment
   group: terraform-${{ inputs.environment }}
   cancel-in-progress: false
 
 env:
+  # Repo vars used by both docker build and Terraform variables
   ACR_NAME: ${{ vars.ACR_NAME }}
   IMAGE_NAME: ${{ vars.IMAGE_NAME }}
-  ACR_LOGIN_SERVER: ${{ vars.ACR_NAME }}.azurecr.io
+  ACR_LOGIN_SERVER: ${{ vars.ACR_NAME }}.azurecr.io # Login server derived from ACR name since suffix is stable
 
+  # Terraform non interactive settings for CI
   TF_IN_AUTOMATION: "true"
   TF_INPUT: "false"
   TF_WORKING_DIR: "terraform/aks"
   TF_VERSION: "1.11.4"
+  # Export repo vars into Terraform to guarantee image naming alignment - store these in GitHub variables
   TF_VAR_acr_name: ${{ vars.ACR_NAME }}
   TF_VAR_image_name: ${{ vars.IMAGE_NAME }}
 
-  # Azure auth via OIDC (recommended)
+  # Azure auth via OIDC - store these in GitHub secrets
   ARM_USE_OIDC: "true"
   ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
   ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
   ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-  # Backend (Azure Storage) - store these in GitHub secrets
+  # Terraform Backend (Azure Storage) - store these in GitHub secrets
   TF_BACKEND_RG: ${{ secrets.BACKEND_AZURE_RESOURCE_GROUP_NAME }}
   TF_BACKEND_SA: ${{ secrets.BACKEND_AZURE_STORAGE_ACCOUNT_NAME }}
   TF_BACKEND_CONTAINER: ${{ secrets.BACKEND_AZURE_STORAGE_ACCOUNT_CONTAINER_NAME }}
@@ -70,6 +74,7 @@ jobs:
           terraform_version: ${{ env.TF_VERSION }}
           terraform_wrapper: false
 
+      # Backend key is set here rather than in Terraform code
       - name: Terraform Init (AzureRM remote backend)
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: |
@@ -83,6 +88,8 @@ jobs:
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: terraform validate
 
+      # tfvars holds deployment specific inputs like RG name, AKS name, tags, app name
+      # image tag is injected at runtime so each commit can be deployed
       - name: Terraform Plan (create plan file)
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: |
@@ -95,6 +102,7 @@ jobs:
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: terraform show -no-color tfplan > tfplan.txt
 
+      # Persist the exact plan that will be applied
       - name: Upload plan artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -167,6 +175,7 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      # Use an access token rather than docker password auth
       - name: ACR login (token for Buildx)
         shell: bash
         run: |
@@ -175,6 +184,7 @@ jobs:
             --username 00000000-0000-0000-0000-000000000000 \
             --password-stdin
 
+      # Tag uses repo vars and commit SHA so Terraform can deploy the same tag
       - name: Build & Push (with GitHub Actions cache)
         uses: docker/build-push-action@v6
         with:
@@ -223,6 +233,7 @@ jobs:
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: terraform validate
 
+      # Targeted destroy helps avoid deleting unrelated resources in the same RG
       - name: "Terraform Destroy (targeted to AKS + k8s only)"
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: |
