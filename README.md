@@ -225,6 +225,8 @@ ACR and AKS are deployed in **two separate Terraform configurations** and **two 
 
 In short: **ACR is the image store; AKS is the image runner**—separating workflows keeps the learning repo easier to reason about and safer to operate.
 
+➡️ Jump to: [Quickstart](#quickstart)
+
 ## Local workflow (optional)
 
 If you want to run Terraform locally (instead of GitHub Actions), the key is to mirror what the workflows do:
