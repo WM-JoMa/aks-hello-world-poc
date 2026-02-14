@@ -7,8 +7,6 @@ A learning repo that uses **Terraform** and **GitHub Actions** to:
 
 `Hello, World!`
 
-➡️ Jump to: [Quickstart](#quickstart)
-
 ➡️ Jump to: [How it works](#how-it-works)
 
 ## Table of contents
