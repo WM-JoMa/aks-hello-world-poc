@@ -9,8 +9,4 @@ resource "azurerm_container_registry" "hello_world" {
   sku                 = var.acr_sku
 
   tags = var.tags
-
-  lifecycle {
-    prevent_destroy = var.prevent_destroy
-  }
 }

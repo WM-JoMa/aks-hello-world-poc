@@ -18,9 +18,3 @@ variable "acr_sku" {
   description = "SKU tier for the Azure Container Registry."
   default     = "Basic"
 }
-
-variable "prevent_destroy" {
-  type        = bool
-  description = "If true, prevent Terraform from destroying the ACR."
-  default     = true
-}
