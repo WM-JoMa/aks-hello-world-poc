@@ -27,6 +27,7 @@ resource "azurerm_kubernetes_cluster" "aks" {
     name            = "default"
     node_count      = var.default_node_pool_node_count
     vm_size         = var.default_node_pool_vm_size
+    tags            = var.tags
   }
 
   identity {
