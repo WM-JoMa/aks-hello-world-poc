@@ -149,7 +149,7 @@ This workflow will:
 
 After the AKS workflow completes:
 1) Find the external IP assigned to the Kubernetes Service (type `LoadBalancer`) using your preferred method (Azure Portal is fine).
-2) Call it in a browser or with curl:
+2) Call it with curl:
 
 ```bash
 curl http://<external-ip>/
