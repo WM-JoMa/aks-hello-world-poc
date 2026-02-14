@@ -9,13 +9,11 @@ terraform {
   }
 
   backend "azurerm" {
-    key      = "aks-poc.tfstate"
     use_oidc = true
   }
 }
 
 provider "azurerm" {
-  subscription_id = var.subscription_id
   features {}
   use_oidc = true
 }

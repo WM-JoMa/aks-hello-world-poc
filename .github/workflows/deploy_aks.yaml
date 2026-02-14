@@ -25,14 +25,16 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  ACR_NAME: wmpagreenwaldhelloworldacr
-  ACR_LOGIN_SERVER: wmpagreenwaldhelloworldacr.azurecr.io
-  IMAGE_NAME: helloworld-java
+  ACR_NAME: ${{ vars.ACR_NAME }}
+  IMAGE_NAME: ${{ vars.IMAGE_NAME }}
+  ACR_LOGIN_SERVER: ${{ vars.ACR_NAME }}.azurecr.io
 
   TF_IN_AUTOMATION: "true"
   TF_INPUT: "false"
   TF_WORKING_DIR: "terraform/aks"
   TF_VERSION: "1.11.4"
+  TF_VAR_acr_name: ${{ vars.ACR_NAME }}
+  TF_VAR_image_name: ${{ vars.IMAGE_NAME }}
 
   # Azure auth via OIDC (recommended)
   ARM_USE_OIDC: "true"

@@ -1,5 +1,10 @@
 data "azurerm_resource_group" "rg" {
-  name     = "aks-hello-world-poc"
+  name = var.resource_group_name
+}
+
+data "azurerm_container_registry" "acr" {
+  name                = var.acr_name
+  resource_group_name = data.azurerm_resource_group.rg.name
 }
 
 data "terraform_remote_state" "acr" {
@@ -14,54 +19,56 @@ data "terraform_remote_state" "acr" {
 }
 
 locals {
-  tags = {
-    "Owner 1"         : "agreenwald@westmonroe.com"
-    "Owner 2"         : "None"
-    "Client Code"     : "Jepp-POC"
-  }
-  image = "wmpagreenwaldhelloworldacr.azurecr.io/helloworld-java:${var.image_tag}"
+  acr_login_server = "${var.acr_name}.azurecr.io"
+  image            = "${local.acr_login_server}/${var.image_name}:${var.image_tag}"
+
+  k8s_namespace       = var.app_name
+  k8s_app_label       = var.app_name
+  k8s_deployment_name = "${var.app_name}-app"
+  k8s_service_name    = "${var.app_name}-service"
 }
 
+
 resource "azurerm_kubernetes_cluster" "aks" {
-  name                = "aks-hello-world-cluster"
+  name                = var.aks_name
   location            = data.azurerm_resource_group.rg.location
   resource_group_name = data.azurerm_resource_group.rg.name
-  dns_prefix          = "akshelloworld"
+  dns_prefix          = var.aks_dns_prefix
 
   default_node_pool {
     name            = "default"
-    node_count      = 1
-    vm_size         = "Standard_DS2_v2"
+    node_count      = var.default_node_pool_node_count
+    vm_size         = var.default_node_pool_vm_size
   }
 
   identity {
     type = "SystemAssigned"
   }
 
-  tags                = local.tags
+  tags                = var.tags
 }
 
 resource "azurerm_role_assignment" "this" {
   principal_id                     = azurerm_kubernetes_cluster.aks.kubelet_identity[0].object_id
   role_definition_name             = "AcrPull"
-  scope                            = data.terraform_remote_state.acr.outputs.container_registry_id
+  scope                            = data.azurerm_container_registry.acr.id
   skip_service_principal_aad_check = true
 }
 
 resource "kubernetes_namespace_v1" "hello_world_ns" {
   depends_on = [azurerm_role_assignment.this]
   metadata {
-    name = "hello-world"
+    name = local.k8s_namespace
   }
 }
 
 resource "kubernetes_deployment_v1" "hello_world_app" {
   depends_on = [azurerm_role_assignment.this]
   metadata {
-    name      = "hello-world-app"
+    name      = local.k8s_deployment_name
     namespace = kubernetes_namespace_v1.hello_world_ns.metadata[0].name
     labels = {
-      app = "hello-world"
+      app = local.k8s_app_label
     }
   }
 
@@ -70,20 +77,20 @@ resource "kubernetes_deployment_v1" "hello_world_app" {
 
     selector {
       match_labels = {
-        app = "hello-world"
+        app = local.k8s_app_label
       }
     }
 
     template {
       metadata {
         labels = {
-          app = "hello-world"
+          app = local.k8s_app_label
         }
       }
 
       spec {
         container {
-          name  = "hello-world-container"
+          name  = "${local.k8s_namespace}-container"
           image = local.image
           image_pull_policy = "Always"
 
@@ -118,13 +125,13 @@ resource "kubernetes_deployment_v1" "hello_world_app" {
 resource "kubernetes_service_v1" "hello_world_service" {
   depends_on = [azurerm_role_assignment.this]
   metadata {
-    name      = "hello-world-service"
+    name      = local.k8s_service_name
     namespace = kubernetes_namespace_v1.hello_world_ns.metadata[0].name
   }
 
   spec {
     selector = {
-      app = "hello-world"
+      app = local.k8s_app_label
     }
 
     type = "LoadBalancer"

@@ -1,24 +1,16 @@
 data "azurerm_resource_group" "rg" {
-  name     = "aks-hello-world-poc"
-}
-
-locals {
-  tags = {
-    "Owner 1"         : "agreenwald@westmonroe.com"
-    "Owner 2"         : "None"
-    "Client Code"     : "Jepp-POC"
-  }
+  name = var.resource_group_name
 }
 
 resource "azurerm_container_registry" "hello_world" {
-  name                = "wmpagreenwaldhelloworldacr"
+  name                = var.acr_name
   resource_group_name = data.azurerm_resource_group.rg.name
   location            = data.azurerm_resource_group.rg.location
-  sku                 = "Basic"
+  sku                 = var.acr_sku
 
-  tags = local.tags
+  tags = var.tags
 
   lifecycle {
-    prevent_destroy = true
+    prevent_destroy = var.prevent_destroy
   }
 }

@@ -1,1 +1,7 @@
-subscription_id = "d41c4640-a37e-431b-9788-609668213f2f"
+resource_group_name = "aks-hello-world-poc"
+
+tags = {
+  "Owner 1"     = "agreenwald@westmonroe.com"
+  "Owner 2"     = "None"
+  "Client Code" = "Jepp-POC"
+}
