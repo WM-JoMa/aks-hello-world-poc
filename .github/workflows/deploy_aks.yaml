@@ -1,4 +1,4 @@
-name: DEPRECATED Terraform Plan, Apply, Destroy
+name: Deploy AKS Terraform
 
 on:
   workflow_dispatch:
@@ -7,7 +7,7 @@ on:
         description: "Choose Terraform action"
         required: true
         type: choice
-        options: [plan, apply, destroy]
+        options: [plan -> apply, destroy]
       environment:
         description: "Environment"
         required: true
@@ -31,7 +31,7 @@ env:
 
   TF_IN_AUTOMATION: "true"
   TF_INPUT: "false"
-  TF_WORKING_DIR: "."
+  TF_WORKING_DIR: "terraform/aks"
   TF_VERSION: "1.11.4"
 
   # Azure auth via OIDC (recommended)
@@ -48,7 +48,7 @@ env:
 jobs:
   plan:
     name: Terraform Plan
-    if: ${{ inputs.action == 'plan' || inputs.action == 'apply' }}
+    if: ${{ inputs.action == 'plan -> apply' }}
     runs-on: ubuntu-latest
 
     steps:
@@ -75,7 +75,7 @@ jobs:
             -backend-config="resource_group_name=${TF_BACKEND_RG}" \
             -backend-config="storage_account_name=${TF_BACKEND_SA}" \
             -backend-config="container_name=${TF_BACKEND_CONTAINER}" \
-            -backend-config="key=${{ inputs.environment }}.tfstate"
+            -backend-config="key=aks_${{ inputs.environment }}.tfstate"
 
       - name: Terraform Validate
         working-directory: ${{ env.TF_WORKING_DIR }}
@@ -115,7 +115,7 @@ jobs:
 
   apply:
     name: Terraform Apply (approval required)
-    if: ${{ inputs.action == 'apply' }}
+    if: ${{ inputs.action == 'plan -> apply' }}
     needs: [plan]
     runs-on: ubuntu-latest
 
@@ -153,7 +153,7 @@ jobs:
             -backend-config="resource_group_name=${TF_BACKEND_RG}" \
             -backend-config="storage_account_name=${TF_BACKEND_SA}" \
             -backend-config="container_name=${TF_BACKEND_CONTAINER}" \
-            -backend-config="key=${{ inputs.environment }}.tfstate"
+            -backend-config="key=aks_${{ inputs.environment }}.tfstate"
 
       - name: Verify plan exists
         working-directory: ${{ env.TF_WORKING_DIR }}
@@ -204,7 +204,7 @@ jobs:
             -backend-config="resource_group_name=${TF_BACKEND_RG}" \
             -backend-config="storage_account_name=${TF_BACKEND_SA}" \
             -backend-config="container_name=${TF_BACKEND_CONTAINER}" \
-            -backend-config="key=${{ inputs.environment }}.tfstate"
+            -backend-config="key=aks_${{ inputs.environment }}.tfstate"
 
       - name: Terraform Validate
         working-directory: ${{ env.TF_WORKING_DIR }}

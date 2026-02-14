@@ -1,4 +1,4 @@
-name: DEPRECATED Terraform Plan, Apply, Destroy
+name: Deploy ACR Terraform
 
 on:
   workflow_dispatch:
@@ -7,7 +7,7 @@ on:
         description: "Choose Terraform action"
         required: true
         type: choice
-        options: [plan, apply, destroy]
+        options: [plan -> apply, destroy]
       environment:
         description: "Environment"
         required: true
@@ -48,7 +48,7 @@ env:
 jobs:
   plan:
     name: Terraform Plan
-    if: ${{ inputs.action == 'plan' || inputs.action == 'apply' }}
+    if: ${{ inputs.action == 'plan -> apply' }}
     runs-on: ubuntu-latest
 
     steps:
@@ -115,7 +115,7 @@ jobs:
 
   apply:
     name: Terraform Apply (approval required)
-    if: ${{ inputs.action == 'apply' }}
+    if: ${{ inputs.action == 'plan -> apply' }}
     needs: [plan]
     runs-on: ubuntu-latest
 

@@ -2,6 +2,17 @@ data "azurerm_resource_group" "rg" {
   name     = "aks-hello-world-poc"
 }
 
+data "terraform_remote_state" "acr" {
+  backend = "azurerm"
+
+  config = {
+    resource_group_name  = "aks-hello-world-poc"
+    storage_account_name = "stakspoctfstate"
+    container_name       = "terraformstatefiles"
+    key                  = "acr_poc.tfstate"
+  }
+}
+
 locals {
   tags = {
     "Owner 1"         : "agreenwald@westmonroe.com"
@@ -9,17 +20,6 @@ locals {
     "Client Code"     : "Jepp-POC"
   }
   image = "wmpagreenwaldhelloworldacr.azurecr.io/helloworld-java:${var.image_tag}"
-}
-
-resource "azurerm_container_registry" "hello_world" {
-  name                = "wmpagreenwaldhelloworldacr"
-  resource_group_name = data.azurerm_resource_group.rg.name
-  location            = data.azurerm_resource_group.rg.location
-  sku                 = "Basic"
-
-  lifecycle {
-    prevent_destroy = true
-  }
 }
 
 resource "azurerm_kubernetes_cluster" "aks" {
@@ -44,7 +44,7 @@ resource "azurerm_kubernetes_cluster" "aks" {
 resource "azurerm_role_assignment" "this" {
   principal_id                     = azurerm_kubernetes_cluster.aks.kubelet_identity[0].object_id
   role_definition_name             = "AcrPull"
-  scope                            = azurerm_container_registry.hello_world.id
+  scope                            = data.terraform_remote_state.acr.outputs.container_registry_id
   skip_service_principal_aad_check = true
 }
 
