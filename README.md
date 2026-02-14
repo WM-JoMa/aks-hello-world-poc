@@ -28,7 +28,7 @@ A learning repo that uses **Terraform** and **GitHub Actions** to:
 ## Overview
 
 This repository is organized into two Terraform deployments (ACR first, then AKS), plus a minimal Java web app and Dockerfile.
-
+```
 .
 ├── .github/
 │   └── workflows/
@@ -49,7 +49,7 @@ This repository is organized into two Terraform deployments (ACR first, then AKS
 │           └── poc.tfvars
 ├── Dockerfile
 └── HelloWorld.java
-
+```
 ## Prerequisites
 
 You’ll need:
