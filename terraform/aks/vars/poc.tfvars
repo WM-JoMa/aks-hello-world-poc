@@ -1,6 +1,6 @@
 resource_group_name = "aks-hello-world-poc"
 
-aks_name       = "aks-pos-cluster"
+aks_name       = "aks-poc-cluster"
 aks_dns_prefix = "akshelloworld"
 
 app_name = "hello-world"
