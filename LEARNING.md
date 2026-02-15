@@ -8,19 +8,19 @@
 
 ---
 
-## Step 1 Copy the repo and replicate the deployment
+## Step 1 - Copy the repo and replicate the deployment
 
-### 1.1 Fork or copy
+### 1.1\) Fork or copy
 
 * Fork the repository or copy it into a new repo you control.
 
-### 1.2 Create Azure prerequisites
+### 1.2\) Create Azure prerequisites
 
 * Existing Azure Resource Group for the learning environment.
 * Azure Storage account and blob container for Terraform remote state.
 * Azure AD app registration configured for GitHub OIDC with permissions to create ACR and AKS resources.
 
-### 1.3 Configure GitHub repo variables and secrets
+### 1.3\) Configure GitHub repo variables and secrets
 
 Repo variables
 
@@ -40,13 +40,13 @@ Optional
 
 * Create a GitHub Environment named `poc` and require approvals for apply jobs.
 
-### 1.4 Deploy via GitHub Actions
+### 1.4\) Deploy via GitHub Actions
 
 * Run Deploy ACR workflow with plan then apply.
 * Run Deploy AKS workflow with plan then apply.
 * Verify the service external IP responds with `Hello, World!`.
 
-### 1.5 Connect to the AKS cluster
+### 1.5\) Connect to the AKS cluster
 
 Goal
 Confirm you can access the cluster control plane and inspect the resources Terraform created.
@@ -78,11 +78,11 @@ Learning objectives
 
 ---
 
-## Step 2 Iterate on the deployment and add improvements
+## Step 2 - Iterate on the deployment and add improvements
 
 You’ll implement these improvements in small PRs, one theme at a time, with a workflow run after each PR to confirm behavior.
 
-### 2.1 Add Terraform outputs for ACR and AKS
+### 2.1\) Add Terraform outputs for ACR and AKS
 
 Work items
 
@@ -100,7 +100,7 @@ Verification
 * Workflows show outputs in logs.
 * Outputs are correct and useful for verify steps.
 
-### 2.2 Tighten provider version pinning
+### 2.2\) Tighten provider version pinning
 
 Work items
 
@@ -117,7 +117,7 @@ Verification
 * `terraform init` uses the intended versions.
 * Plans remain stable across reruns.
 
-### 2.3 Add a formatting check job in GitHub Actions
+### 2.3\) Add a formatting check job in GitHub Actions
 
 Work items
 
@@ -135,7 +135,7 @@ Verification
 * Formatting failures block merges or show clear job failures.
 * Formatting passes when code is formatted.
 
-### 2.4 Add a job summary for AKS outputs
+### 2.4\) Add a job summary for AKS outputs
 
 Work items
 
@@ -151,7 +151,7 @@ Verification
 
 * The Actions run summary shows the outputs clearly.
 
-### 2.5 Make the app port configurable
+### 2.5\) Make the app port configurable
 
 Work items
 
@@ -170,7 +170,7 @@ Verification
 * Deploy with a non default port and still get `Hello, World!`.
 * Probes succeed.
 
-### 2.6 Add resource requests and limits
+### 2.6\) Add resource requests and limits
 
 Work items
 
