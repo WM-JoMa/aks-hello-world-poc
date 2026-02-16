@@ -65,10 +65,11 @@ You’ll need:
 
 ## Quickstart
 
-1) Set up GitHub repo **variables** and **secrets**: see [Configuration](#configuration).  
-2) Deploy ACR: see [Deploy](#deploy).  
-3) Deploy AKS + the app: see [Deploy](#deploy).  
-4) Confirm the response: see [Verify](#verify).
+1) Create a new fork of this repository as your starting point.
+2) Set up GitHub repo **variables** and **secrets**: see [Configuration](#configuration).  
+3) Deploy ACR: see [Deploy](#deploy).  
+4) Deploy AKS + the app: see [Deploy](#deploy).  
+5) Confirm the response: see [Verify](#verify).
 
 ## Architecture
 
