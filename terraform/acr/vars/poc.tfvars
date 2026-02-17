@@ -1,7 +1,7 @@
-resource_group_name = "aks-hello-world-poc"
+resource_group_name = "msanchez-aks-poc"
 
 tags = {
-  "Owner 1"     = "agreenwald@westmonroe.com"
-  "Owner 2"     = "None"
+  "Owner 1"     = "msanchez@westmonroe.com"
+  "Owner 2"     = "agreenwald@westmonroe.com"
   "Client Code" = "Jepp-POC"
 }
