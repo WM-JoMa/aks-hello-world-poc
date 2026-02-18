@@ -5,7 +5,7 @@ A learning repo that uses **Terraform** and **GitHub Actions** to:
 1) create an **Azure Container Registry (ACR)**, and  
 2) create an **Azure Kubernetes Service (AKS)** cluster that runs a tiny web app which responds with:
 
-`Hello, World!`
+`Hello, World! updated`
 
 ➡️ Jump to: [How it works](#how-it-works)
 
